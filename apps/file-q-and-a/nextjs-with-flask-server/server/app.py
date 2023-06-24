@@ -4,6 +4,7 @@ import os
 import uuid
 import sys
 import logging
+import hashlib
 from config import *
 # from config import PINECONE_API_KEY, PINECONE_ENV, PINECONE_INDEX
 import tiktoken
@@ -48,20 +49,9 @@ def load_pinecone_index() -> pinecone.Index:
 def create_app():
     pinecone_index = load_pinecone_index()
     tokenizer = tiktoken.get_encoding("gpt2")
-    if PINECONE_NAMESPACE not in [None, ""]:
-        # session_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, PINECONE_NAMESPACE).hex)
-        session_id = PINECONE_NAMESPACE
-        logging.info(f"pinecode_namespace: {PINECONE_NAMESPACE}")
-    else:
-        session_id = str(uuid.uuid4().hex)
     app = Flask(__name__)
     app.pinecone_index = pinecone_index
     app.tokenizer = tokenizer
-    app.session_id = session_id
-    # log session id
-    logging.info(f"session_id: {session_id}")
-    logging.info(f"pinecone_index: {pinecone_index}")
-    app.config["file_text_dict"] = {}
     CORS(app, supports_credentials=True)
 
     return app
@@ -76,7 +66,9 @@ def process_file():
     try:
         file = request.files["file"]
         logging.info(str(file))
-        handle_file(file, app.session_id, app.pinecone_index, app.tokenizer)
+        file_hash = hashlib.md5(file.read()).hexdigest()
+        session_id = file_hash
+        handle_file(file, session_id, app.pinecone_index, app.tokenizer)
         return jsonify({"success": True})
     except Exception as e:
         logging.error(str(e))
