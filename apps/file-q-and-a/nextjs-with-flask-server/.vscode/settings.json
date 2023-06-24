@@ -1,0 +1,45 @@
+{
+  "python.defaultInterpreterPath": "/opt/conda/envs/openai/bin/python",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.python"
+  },
+  "python.formatting.provider": "black",
+  "pylint.interpreter": [
+    "/workspaces/openai-cookbook/apps/file-q-and-a/nextjs-with-flask-server/server/venv/bin/python"
+  ],
+  "python.linting.pylintPath": "/workspaces/openai-cookbook/apps/file-q-and-a/nextjs-with-flask-server/server/venv/bin/pylint",
+  "python.linting.enabled": false,
+  "python.linting.lintOnSave": false,
+  "python.languageServer": "Pylance",
+  "python.analysis.enablePytestSupport": false,
+  "python.analysis.include": [
+    "/workspaces/openai-cookbook/apps/file-q-and-a/nextjs-with-flask-server/server/venv/lib/python3.10/site-packages"
+  ],
+  "python.analysis.enableSyncServer": true,
+  "python.analysis.typeshedPaths": [
+    "/workspaces/openai-cookbook/apps/file-q-and-a/nextjs-with-flask-server/server/venv/lib/python3.10/site-packages"
+  ],
+  "python.analysis.packageIndexDepths": [
+    {
+      "name": "sklearn",
+      "depth": 2
+    },
+    {
+      "name": "matplotlib",
+      "depth": 2
+    },
+    {
+      "name": "scipy",
+      "depth": 2
+    },
+    {
+      "name": "django",
+      "depth": 2
+    },
+    {
+      "name": "flask",
+      "depth": 2
+    }
+  ],
+  "python.formatting.blackPath": "/workspaces/openai-cookbook/apps/file-q-and-a/nextjs-with-flask-server/server/venv/bin/black"
+}

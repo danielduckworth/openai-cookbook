@@ -3,8 +3,12 @@ set -e
 
 echo "Starting Python server..."
 
+export FLASK_ENV=development
+export PINECONE_NAMESPACE="isco-p3-definitions"
+
 pip install virtualenv
 python -m virtualenv venv
 source venv/bin/activate
 pip install -r requirements.txt
 OPENAI_API_KEY=$1 python app.py
+# OPENAI_API_KEY=op://3wuvz4qu4ty424vjwkgbws7ck4/ez2wydwtl3qfmenijdsd3is2ua/credential python app.py

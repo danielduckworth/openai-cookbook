@@ -1,17 +1,15 @@
 from __future__ import print_function
 
 import os
+
+import tiktoken
+import pinecone
 import uuid
 import sys
 import logging
-import hashlib
+
 from config import *
-# from config import PINECONE_API_KEY, PINECONE_ENV, PINECONE_INDEX
-import tiktoken
-import pinecone
-
-
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS, cross_origin
 from flask import request
 
@@ -21,13 +19,13 @@ from answer_question import get_answer_from_files
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler("debug.log"), logging.StreamHandler(sys.stdout)],
+    handlers=[
+        logging.FileHandler("debug.log"),
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 
-# Set a seed in the config to persist the session id across server restarts.
-# This will resuse pinecone namespaces and allow you to continue to query the same index.
-PINECONE_NAMESPACE = os.getenv("PINECONE_NAMESPACE")
-
+pinecone_namespace = os.getenv("PINECONE_NAMESPACE")
 
 def load_pinecone_index() -> pinecone.Index:
     """
@@ -45,37 +43,41 @@ def load_pinecone_index() -> pinecone.Index:
 
     return index
 
-
 def create_app():
     pinecone_index = load_pinecone_index()
     tokenizer = tiktoken.get_encoding("gpt2")
+    if pinecone_namespace is None:
+        session_id = str(uuid.uuid4().hex)
+    else:
+        session_id = pinecone_namespace
+        logging.info(f"pinecone_namespace: {pinecone_namespace}")
     app = Flask(__name__)
     app.pinecone_index = pinecone_index
     app.tokenizer = tokenizer
+    app.session_id = session_id
+    # log session id
+    logging.info(f"session_id: {session_id}")
+    app.config["file_text_dict"] = {}
     CORS(app, supports_credentials=True)
 
     return app
 
-
 app = create_app()
 
-
-@app.route("/process_file", methods=["POST"])
+@app.route(f"/process_file", methods=["POST"])
 @cross_origin(supports_credentials=True)
 def process_file():
     try:
-        file = request.files["file"]
+        file = request.files['file']
         logging.info(str(file))
-        file_hash = hashlib.md5(file.read()).hexdigest()
-        session_id = file_hash
-        handle_file(file, session_id, app.pinecone_index, app.tokenizer)
+        handle_file(
+            file, app.session_id, app.pinecone_index, app.tokenizer)
         return jsonify({"success": True})
     except Exception as e:
         logging.error(str(e))
         return jsonify({"success": False})
 
-
-@app.route("/answer_question", methods=["POST"])
+@app.route(f"/answer_question", methods=["POST"])
 @cross_origin(supports_credentials=True)
 def answer_question():
     try:
@@ -83,18 +85,15 @@ def answer_question():
         question = params["question"]
 
         answer_question_response = get_answer_from_files(
-            question, app.session_id, app.pinecone_index
-        )
+            question, app.session_id, app.pinecone_index)
         return answer_question_response
     except Exception as e:
         return str(e)
-
 
 @app.route("/healthcheck", methods=["GET"])
 @cross_origin(supports_credentials=True)
 def healthcheck():
     return "OK"
-
 
 if __name__ == "__main__":
     app.run(debug=True, port=SERVER_PORT, threaded=True)

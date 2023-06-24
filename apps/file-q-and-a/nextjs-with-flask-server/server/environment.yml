@@ -1,0 +1,22 @@
+name: openai
+channels:
+  - conda-forge
+  - default
+dependencies:
+  - python >=3.10
+  - pip
+  - ipykernel
+  - ipywidgets
+  - flask-cors
+  - openai
+  - pypdf2
+  - numpy
+  - scikit-learn
+  - docx2txt
+  - flask
+  - jinja2
+  - PyYAML
+  - tiktoken
+  - clearml
+  - pip:
+    - pinecone-client

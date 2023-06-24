@@ -32,6 +32,7 @@ export default async function extractTextFromFile({
     case "application/vnd.openxmlformats-officedocument.wordprocessingml.document": // i.e. docx file
       const docxResult = await mammoth.extractRawText({ path: filepath });
       return docxResult.value;
+    case "text/md":
     case "text/markdown":
     case "text/csv":
     case "text/html":
