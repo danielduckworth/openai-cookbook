@@ -1,13 +1,16 @@
 from __future__ import print_function
-from config import *
 
-import tiktoken
-import pinecone
+import os
 import uuid
 import sys
 import logging
+from config import *
+# from config import PINECONE_API_KEY, PINECONE_ENV, PINECONE_INDEX
+import tiktoken
+import pinecone
 
-from flask import Flask, jsonify
+
+from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 from flask import request
 
@@ -17,20 +20,13 @@ from answer_question import get_answer_from_files
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("debug.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.FileHandler("debug.log"), logging.StreamHandler(sys.stdout)],
 )
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("debug.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+# Set a seed in the config to persist the session id across server restarts.
+# This will resuse pinecone namespaces and allow you to continue to query the same index.
+PINECONE_NAMESPACE = os.getenv("PINECONE_NAMESPACE")
+
 
 def load_pinecone_index() -> pinecone.Index:
     """
@@ -48,37 +44,46 @@ def load_pinecone_index() -> pinecone.Index:
 
     return index
 
+
 def create_app():
     pinecone_index = load_pinecone_index()
     tokenizer = tiktoken.get_encoding("gpt2")
-    session_id = str(uuid.uuid4().hex)
+    if PINECONE_NAMESPACE not in [None, ""]:
+        # session_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, PINECONE_NAMESPACE).hex)
+        session_id = PINECONE_NAMESPACE
+        logging.info(f"pinecode_namespace: {PINECONE_NAMESPACE}")
+    else:
+        session_id = str(uuid.uuid4().hex)
     app = Flask(__name__)
     app.pinecone_index = pinecone_index
     app.tokenizer = tokenizer
     app.session_id = session_id
     # log session id
     logging.info(f"session_id: {session_id}")
+    logging.info(f"pinecone_index: {pinecone_index}")
     app.config["file_text_dict"] = {}
     CORS(app, supports_credentials=True)
 
     return app
 
+
 app = create_app()
 
-@app.route(f"/process_file", methods=["POST"])
+
+@app.route("/process_file", methods=["POST"])
 @cross_origin(supports_credentials=True)
 def process_file():
     try:
-        file = request.files['file']
+        file = request.files["file"]
         logging.info(str(file))
-        handle_file(
-            file, app.session_id, app.pinecone_index, app.tokenizer)
+        handle_file(file, app.session_id, app.pinecone_index, app.tokenizer)
         return jsonify({"success": True})
     except Exception as e:
         logging.error(str(e))
         return jsonify({"success": False})
 
-@app.route(f"/answer_question", methods=["POST"])
+
+@app.route("/answer_question", methods=["POST"])
 @cross_origin(supports_credentials=True)
 def answer_question():
     try:
@@ -86,15 +91,18 @@ def answer_question():
         question = params["question"]
 
         answer_question_response = get_answer_from_files(
-            question, app.session_id, app.pinecone_index)
+            question, app.session_id, app.pinecone_index
+        )
         return answer_question_response
     except Exception as e:
         return str(e)
+
 
 @app.route("/healthcheck", methods=["GET"])
 @cross_origin(supports_credentials=True)
 def healthcheck():
     return "OK"
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=SERVER_PORT, threaded=True)
