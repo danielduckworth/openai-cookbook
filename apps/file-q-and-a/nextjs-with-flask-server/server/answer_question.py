@@ -24,7 +24,8 @@ def get_answer_from_files(question, session_id, pinecone_index):
             vector=search_query_embedding,
         )
         logging.info(
-            f"[get_answer_from_files] received query response from Pinecone: {query_response}")
+            f"[get_answer_from_files] received query response from Pinecone: {query_response}"
+        )
 
         files_string = ""
         file_text_dict = current_app.config["file_text_dict"]
@@ -35,13 +36,14 @@ def get_answer_from_files(question, session_id, pinecone_index):
             score = result.score
             filename = result.metadata["filename"]
             file_text = file_text_dict.get(file_chunk_id)
-            file_string = f"###\n\"{filename}\"\n{file_text}\n"
+            file_string = f'###\n"{filename}"\n{file_text}\n'
             if score < COSINE_SIM_THRESHOLD and i > 0:
                 logging.info(
-                    f"[get_answer_from_files] score {score} is below threshold {COSINE_SIM_THRESHOLD} and i is {i}, breaking")
+                    f"[get_answer_from_files] score {score} is below threshold {COSINE_SIM_THRESHOLD} and i is {i}, breaking"
+                )
                 break
             files_string += file_string
-        
+
         # Note: this is not the proper way to use the ChatGPT conversational format, but it works for now
         messages = [
             {
